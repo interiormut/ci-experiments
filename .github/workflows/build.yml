@@ -1,0 +1,33 @@
+name: Build Docker images
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build cargo-chef baseline
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cargo-chef
+          tags: ci-experiments:cargo-chef
+          load: true
+          cache-from: type=gha,scope=cargo-chef
+          cache-to: type=gha,mode=max,scope=cargo-chef
+      - name: Build cache-mount variant
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cache-mount
+          tags: ci-experiments:cache-mount
+          load: true
+          cache-from: type=gha,scope=cache-mount
+          cache-to: type=gha,mode=max,scope=cache-mount
