@@ -31,3 +31,12 @@ jobs:
           load: true
           cache-from: type=gha,scope=cache-mount
           cache-to: type=gha,mode=max,scope=cache-mount
+      - name: Build cargo-chef with shared target cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cargo-chef-fixed
+          tags: ci-experiments:cargo-chef-fixed
+          load: true
+          cache-from: type=gha,scope=cargo-chef-fixed
+          cache-to: type=gha,mode=max,scope=cargo-chef-fixed

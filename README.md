@@ -21,6 +21,10 @@ git checkout, and target directories through BuildKit cache mounts. GitHub
 Actions exports the BuildKit layers with `type=gha`; the cache mounts are
 therefore available to subsequent builds on the same workflow cache scope.
 
+`Dockerfile.cargo-chef-fixed` keeps the cargo-chef structure but mounts the
+same BuildKit target cache in both `cargo chef cook` and `cargo build`. This is
+the smallest direct correction for Faber's existing Dockerfile.
+
 ## Faber finding
 
 Faber's API build showed the same pattern. In run

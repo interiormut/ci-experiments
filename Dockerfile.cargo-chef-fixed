@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+FROM rust:bookworm AS chef
+WORKDIR /app
+RUN cargo install cargo-chef --locked
+
+FROM chef AS planner
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS cacher
+COPY --from=planner /app/recipe.json recipe.json
+RUN --mount=type=cache,id=cargo-registry-fixed,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=cargo-git-fixed,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=target-ci-experiments-fixed,target=/app/target,sharing=locked \
+    cargo chef cook --release --locked --recipe-path recipe.json
+
+FROM cacher AS builder
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN --mount=type=cache,id=cargo-registry-fixed,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=cargo-git-fixed,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=target-ci-experiments-fixed,target=/app/target,sharing=locked \
+    cargo build --release --locked \
+    && mkdir -p /out \
+    && cp target/release/ci-experiments /out/ci-experiments
+
+FROM debian:bookworm-slim AS runner
+COPY --from=builder /out/ci-experiments /usr/local/bin/ci-experiments
+EXPOSE 3000
+CMD ["/usr/local/bin/ci-experiments"]
