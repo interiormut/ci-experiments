@@ -2,6 +2,9 @@
 
 This is a small Axum project used to reproduce slow uncached Rust Docker builds.
 
+See [RUST-DOCKER-CI-CACHING.md](RUST-DOCKER-CI-CACHING.md) for the complete
+cause, conditions, diagnosis, and production fix.
+
 ## Reproduce locally
 
 Run each build twice and compare the logs:
@@ -17,9 +20,11 @@ second time during the final `cargo build` because the target directory from
 the cook stage is not persisted as a BuildKit cache mount.
 
 `Dockerfile.cache-mount` uses one release build and persists Cargo's registry,
-git checkout, and target directories through BuildKit cache mounts. GitHub
-Actions exports the BuildKit layers with `type=gha`; the cache mounts are
-therefore available to subsequent builds on the same workflow cache scope.
+git checkout, and target directories through BuildKit cache mounts. The mounts
+are reusable by later steps using the same BuildKit builder. The `type=gha`
+exporter persists BuildKit's exported cache according to the backend's support
+and retention behavior; it is not an unlimited or permanent Cargo artifact
+store.
 
 `Dockerfile.cargo-chef-fixed` keeps the cargo-chef structure but mounts the
 same BuildKit target cache in both `cargo chef cook` and `cargo build`. This is
